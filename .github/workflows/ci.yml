@@ -1,0 +1,43 @@
+name: "Main CI with Hetzner Runner"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    uses: ./.github/workflows/hcloud_runner.yml
+    with:
+      server_type: cpx21
+      location: nbg1
+      image: ubuntu-24.04
+    secrets:
+      ORG_CI_GITHUB: ${{ secrets.ORG_CI_GITHUB }}
+      HCLOUD_TOKEN: ${{ secrets.HCLOUD_TOKEN }}
+
+  test-job:
+    needs: setup
+    runs-on: ${{ needs.setup.outputs.label }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          echo "Running on Hetzner runner ${{ needs.setup.outputs.label }} (server: ${{ needs.setup.outputs.server_id }})"
+
+  cleanup:
+    needs: [setup, test-job]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Debug values before cleanup
+        run: |
+          echo "== DEBUG: Cleanup job inputs =="
+          echo "Label: ${{ needs.setup.outputs.label }}"
+          echo "Server ID: ${{ needs.setup.outputs.server_id }}"
+
+      - name: Cleanup Hetzner runner
+        uses: Cyclenerd/hcloud-github-runner@v1
+        with:
+          mode: delete
+          github_token: ${{ secrets.ORG_CI_GITHUB }}
+          hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+          name: ${{ needs.setup.outputs.label }}
+          server_id: ${{ needs.setup.outputs.server_id }}
