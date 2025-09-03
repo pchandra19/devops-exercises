@@ -1,0 +1,53 @@
+name: Hetzner Ephemeral Runner
+
+on:
+  workflow_call:
+    inputs:
+      server_type:
+        type: string
+        default: cpx41
+      location:
+        type: string
+        default: nbg1
+      image:
+        type: string
+        default: ubuntu-24.04
+    secrets:
+      ORG_CI_GITHUB:
+        required: true
+      HCLOUD_TOKEN:
+        required: true
+    outputs:
+      label:
+        description: "Ephemeral runner label"
+        value: ${{ jobs.setup-runner.outputs.label }}
+      server_id:
+        description: "Hetzner Cloud server ID"
+        value: ${{ jobs.setup-runner.outputs.server_id }}
+
+jobs:
+  setup-runner:
+    runs-on: ubuntu-latest
+    outputs:
+      label: ${{ steps.set-vars.outputs.label }}
+      server_id: ${{ steps.set-vars.outputs.server_id }}
+    steps:
+      - id: create
+        uses: Cyclenerd/hcloud-github-runner@v1
+        with:
+          mode: create
+          github_token: ${{ secrets.ORG_CI_GITHUB }}
+          hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
+          server_type: ${{ inputs.server_type }}
+          location: ${{ inputs.location }}
+          image: ${{ inputs.image }}
+
+      - name: Debug create step
+        run: |
+          echo "All outputs from create step:"
+          echo "${{ toJson(steps.create.outputs) }}"
+
+      - id: set-vars
+        run: |
+          echo "label=${{ steps.create.outputs.label }}" >> $GITHUB_OUTPUT
+          echo "server_id=${{ steps.create.outputs.server_id }}" >> $GITHUB_OUTPUT
