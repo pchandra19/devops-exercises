@@ -19,7 +19,8 @@ jobs:
     runs-on: ${{ needs.setup.outputs.label }}
     steps:
       - uses: actions/checkout@v4
-      - run: echo "Running on Hetzner runner ${{ needs.setup.outputs.label }} (server: ${{ needs.setup.outputs.server_id }})"
+      - run: |
+          echo "Running on Hetzner runner ${{ needs.setup.outputs.label }} (server: ${{ needs.setup.outputs.server_id }})"
 
   cleanup:
     needs: [setup, test-job]
